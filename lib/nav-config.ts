@@ -52,10 +52,6 @@ export interface ExternalNavItem {
 export const mainNav: NavItem[] = [
   { href: "/styles", labelKey: "nav.styles" },
   { href: "/templates", labelKey: "nav.templates" },
-  // Top level rather than tucked under Resources: the community catalog is a
-  // place people browse, and burying the only route to contributed work made it
-  // effectively invisible.
-  { href: "/community", labelKey: "nav.community" },
   {
     href: "/guides",
     labelKey: "nav.resources",
@@ -66,6 +62,7 @@ export const mainNav: NavItem[] = [
         {
           groupLabelKey: "nav.resourcesBrowse",
           items: [
+            { href: "/learn", labelKey: "nav.learn" },
             { href: "/animations", labelKey: "nav.animations" },
             { href: "/mouse-interactions", labelKey: "nav.mouseInteractions" },
             { href: "/recipes", labelKey: "nav.recipes" },
@@ -85,7 +82,6 @@ export const mainNav: NavItem[] = [
           items: [
             { href: "/developers", labelKey: "nav.developers" },
             { href: "/changelog", labelKey: "nav.changelog" },
-            { href: "https://anxforever.cn", labelKey: "nav.blog", external: true },
           ],
         },
       ],
