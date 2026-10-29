@@ -353,6 +353,7 @@ export const zh: { [K in keyof typeof en]: string } = {
   "home.featuredNextStyle": "下一个精选风格",
   "home.featuredSlideNav": "精选风格分页",
   "home.featuredSlide": "精选页",
+  "home.featuredLivePreview": "实时预览",
 
   // Social proof
   "home.proof.ariaLabel": "项目数据",
@@ -620,6 +621,7 @@ export const zh: { [K in keyof typeof en]: string } = {
   "previewSwitcher.component.input": "输入框",
   "previewSwitcher.viewDocs": "查看 {name} 完整文档",
   "previewSwitcher.browseMore": "对比其他风格",
+  "previewSwitcher.componentUnavailable": "该风格暂无此组件",
   "footer.prompts.uiDesign": "UI 设计提示词",
   "footer.prompts.landingPage": "落地页提示词",
   "footer.prompts.dashboard": "Dashboard 提示词",
@@ -641,10 +643,17 @@ export const zh: { [K in keyof typeof en]: string } = {
   "newsletter.description": "获取最新的风格、技巧和更新，直达您的收件箱。",
   "newsletter.placeholder": "您的邮箱地址",
   "newsletter.subscribe": "订阅",
-  "newsletter.success": "感谢订阅！我们会及时为您推送更新。",
+  "newsletter.subscribing": "订阅中",
+  "newsletter.successTitle": "已订阅",
+  "newsletter.successDetail": "更新会发到这个邮箱，每封邮件底部都能一键退订。",
+  "newsletter.successSavedOnly": "邮箱已记录。",
+  "newsletter.alreadySubscribed": "这个邮箱已经订阅过了",
+  "newsletter.alreadySubscribedDetail": "更新会继续发送到这个邮箱，无需重复订阅。",
   "newsletter.error": "出了点问题，请稍后再试。",
+  "newsletter.rateLimited": "操作太频繁了，请稍后再试。",
   "newsletter.invalidEmail": "请输入有效的邮箱地址。",
   "common.noResults": "未找到结果",
+  "common.previewUnavailable": "暂无预览",
   "theme.switchToLight": "切换到浅色模式",
   "theme.switchToDark": "切换到深色模式",
 
@@ -826,6 +835,7 @@ export const zh: { [K in keyof typeof en]: string } = {
   "community.next": "\u4e0b\u4e00\u9875",
   "communityRail.purpose": "\u53cd\u9988 \u00b7 \u5439\u6c34 \u00b7 \u6280\u672f\u5206\u4eab",
   "communityRail.cta": "\u70b9\u51fb\u52a0\u5165",
+  "communityRail.groupName": "StyleKit \u4ea4\u6d41\u7fa4",
   "communityRail.groupNumber": "\u7fa4\u53f7",
   "communityRail.aria": "\u52a0\u5165 StyleKit \u4ea4\u6d41\u7fa4\uff08QQ \u7fa4\uff09",
 

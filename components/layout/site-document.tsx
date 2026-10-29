@@ -26,10 +26,6 @@ import { ShowcaseBackBar } from "@/components/showcase/showcase-back-bar";
 import { getSiteAnnouncement } from "@/lib/site-announcements";
 import "@/app/globals.css";
 import type { Locale } from "@/lib/i18n/translations";
-import {
-  FRIEND_PROMO_ID,
-  FRIEND_PROMO_STORAGE_KEY,
-} from "@/lib/home/friend-promo";
 
 const publicSans = Albert_Sans({
   subsets: ["latin", "latin-ext"],
@@ -59,13 +55,19 @@ const publicMono = Fragment_Mono({
   variable: "--font-public-mono",
 });
 
+// Product surfaces keep a system UI stack instead of the editorial faces.
+// Latin families come first, then Chinese families, then the generic family,
+// so a CJK face's Latin glyphs never override the UI Latin face.
+const SYSTEM_LATIN_STACK =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+const SYSTEM_CJK_STACK =
+  '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans CN"';
+
 const productFontVariables = {
-  "--font-body-active":
-    '"PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  "--font-display-active":
-    '"PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  "--font-body-active": `${SYSTEM_LATIN_STACK}, ${SYSTEM_CJK_STACK}, sans-serif`,
+  "--font-display-active": `${SYSTEM_LATIN_STACK}, ${SYSTEM_CJK_STACK}, sans-serif`,
   "--font-mono-active":
-    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    '"JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", "Courier New", "PingFang SC", "Microsoft YaHei", monospace',
 } as CSSProperties;
 
 export const viewport: Viewport = {
@@ -142,16 +144,6 @@ function buildAnnouncementBootstrapScript(id: string): string {
 })();
 `;
 }
-
-const FRIEND_PROMO_BOOTSTRAP_SCRIPT = `
-(() => {
-  try {
-    if (localStorage.getItem(${serializeJsonLd(FRIEND_PROMO_STORAGE_KEY)}) === ${serializeJsonLd(FRIEND_PROMO_ID)}) {
-      document.documentElement.dataset.friendPromoDismissed = "true";
-    }
-  } catch {}
-})();
-`;
 
 export async function generateSiteMetadata(): Promise<Metadata> {
   return buildSiteMetadata(await getRequestLocaleContext());
@@ -250,11 +242,6 @@ export default async function SiteDocument({
             }}
           />
         ) : null}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: FRIEND_PROMO_BOOTSTRAP_SCRIPT,
-          }}
-        />
         {process.env.NODE_ENV !== "production" ? (
           <script
             dangerouslySetInnerHTML={{
