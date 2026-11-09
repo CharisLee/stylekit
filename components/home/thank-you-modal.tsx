@@ -10,14 +10,14 @@ import {
   type ThankYouEntry,
 } from "@/lib/site/support";
 
-// Entries recorded within a week of the newest one count as the same donation
-// batch and celebrate together (screenshots usually arrive in clusters).
-const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
-
 /**
- * Shown once per browser. Closing the dialog is the only thing that writes
- * this key, so a first visit still gets the thank-you note even when the
- * visitor bounces before the dialog appears.
+ * Shown once per browser per donation batch. The value is the id of the newest
+ * acknowledgment the visitor already dismissed, so a later batch opens the
+ * dialog again. A legacy "1" from the old boolean flag simply never matches a
+ * row id, which gives returning visitors one final thank-you before migrating.
+ * Closing the dialog is the only thing that writes this key, so a first visit
+ * still gets the thank-you note even when the visitor bounces before the
+ * dialog appears.
  */
 const DISMISSED_STORAGE_KEY = "stylekit-thank-you-seen";
 const OPEN_DELAY_MS = 1200;
@@ -40,48 +40,44 @@ export function ThankYouModal({
     [resolvedEntries]
   );
   const latestEntry = sortedReceiptEntries[0];
+  const latestBatchId = latestEntry?.id ?? null;
+  // Keep the newest six receipts in view across donation batches. The batch
+  // acknowledgement continues to follow the newest receipt's id.
   const latestReceiptEntries = useMemo(
-    () =>
-      latestEntry
-        ? sortedReceiptEntries
-            .filter(
-              (entry) =>
-                Date.parse(latestEntry.date) - Date.parse(entry.date) <= RECENT_WINDOW_MS
-            )
-            .slice(0, 6)
-        : [],
-    [latestEntry, sortedReceiptEntries]
+    () => sortedReceiptEntries.slice(0, 6),
+    [sortedReceiptEntries]
   );
   useEffect(() => {
     const pathname = window.location.pathname;
     const isHome = pathname === "/" || pathname === "/en" || pathname === "/zh";
 
     if (showOnHomepageOnly && !isHome) return;
-    if (!thankYouModalConfig.enabled || latestReceiptEntries.length === 0) return;
+    if (!thankYouModalConfig.enabled || !latestBatchId || latestReceiptEntries.length === 0) return;
 
     const params = new URLSearchParams(window.location.search);
     const forceOpen = params.has("preview") || params.get("support") === "thanks";
 
-    let dismissed = false;
+    let acknowledgedId: string | null = null;
     try {
-      dismissed = window.localStorage.getItem(DISMISSED_STORAGE_KEY) === "1";
+      acknowledgedId = window.localStorage.getItem(DISMISSED_STORAGE_KEY);
     } catch {
       // Storage can be unavailable in private mode; keep the notice, don't crash.
     }
-    if (!forceOpen && dismissed) return;
+    if (!forceOpen && acknowledgedId === latestBatchId) return;
 
     const timer = window.setTimeout(
       () => setIsOpen(true),
       forceOpen ? 0 : OPEN_DELAY_MS
     );
     return () => window.clearTimeout(timer);
-  }, [latestReceiptEntries.length, showOnHomepageOnly]);
+  }, [latestBatchId, latestReceiptEntries.length, showOnHomepageOnly]);
 
   const handleClose = () => {
     setIsOpen(false);
-    if (!thankYouModalConfig.dismissible) return;
+    if (!thankYouModalConfig.dismissible || !latestBatchId) return;
     try {
-      window.localStorage.setItem(DISMISSED_STORAGE_KEY, "1");
+      // Remember the batch that was just acknowledged, not a permanent flag.
+      window.localStorage.setItem(DISMISSED_STORAGE_KEY, latestBatchId);
     } catch {
       // Ignore storage failures: the dialog closes for this session either way.
     }
@@ -108,63 +104,73 @@ export function ThankYouModal({
         role="dialog"
         aria-modal="true"
         aria-label={config.title[locale]}
-        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-border bg-background p-6 shadow-2xl md:p-8"
+        className="relative flex max-h-[90dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-border bg-background p-5 shadow-2xl sm:p-7"
       >
         {/* 关闭按钮 */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-muted/20 transition-colors"
+          className="absolute right-3 top-3 rounded-full p-2 transition-colors hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/30"
           aria-label={locale === "zh" ? "关闭" : "Close"}
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* 内容区域 */}
-        <div className="flex flex-col gap-6">
-          {/* 文字 */}
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">
+        <div className="flex shrink-0 items-start gap-4 pr-8">
+          {celebrationEntry?.celebrationImage ? (
+            <div className="shrink-0">
+              <Image
+                src={celebrationEntry.celebrationImage}
+                alt={celebrationEntry.celebrationAlt?.[locale] || "Thank you"}
+                width={200}
+                height={200}
+                className="h-14 w-14 object-contain sm:h-16 sm:w-16"
+                unoptimized
+              />
+            </div>
+          ) : null}
+          <div className="min-w-0 pt-1">
+            <h2 className="mb-2 text-xl font-bold sm:text-2xl">
               {config.title[locale]}
             </h2>
-            <p className="text-base text-muted leading-7">
+            <p className="text-sm leading-6 text-muted">
               {config.description[locale]}
             </p>
           </div>
+        </div>
 
-          {/* 图片区：表情包 + 本批全部收款截图 */}
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-start sm:justify-center">
-            {celebrationEntry?.celebrationImage ? (
-              <div className="shrink-0 flex justify-center">
-                <Image
-                  src={celebrationEntry.celebrationImage}
-                  alt={celebrationEntry.celebrationAlt?.[locale] || "Thank you"}
-                  width={200}
-                  height={200}
-                  className="w-36 h-36 sm:w-44 sm:h-44 object-contain"
-                  unoptimized
-                />
-              </div>
-            ) : null}
-
+        <div className="mt-5 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {latestReceiptEntries.map((entry) => (
               <figure
                 key={entry.id}
-                className="shrink-0 overflow-hidden rounded-2xl border border-border bg-zinc-50 p-3 dark:bg-zinc-900/60 max-w-sm"
+                className="min-w-0 overflow-hidden rounded-2xl border border-border bg-background"
               >
-                <div className="relative w-56 sm:w-64 aspect-[3/4] overflow-hidden rounded-xl bg-white">
+                <a
+                  href={entry.receiptImage!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${entry.receiptAlt?.[locale] || "Receipt"} (${entry.date})`}
+                  className="relative block aspect-[4/5] overflow-hidden bg-muted/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-foreground/30"
+                >
                   <Image
                     src={entry.receiptImage!}
                     alt={entry.receiptAlt?.[locale] || "Receipt"}
                     fill
                     className="object-contain"
-                    sizes="(max-width: 640px) 224px, 256px"
+                    sizes="(max-width: 640px) calc((100vw - 88px) / 2), 168px"
                     unoptimized
                   />
-                </div>
+                </a>
+                <figcaption className="border-t border-border px-3 py-2 text-center text-xs text-muted">
+                  {entry.date}
+                </figcaption>
               </figure>
             ))}
           </div>
         </div>
+        <p className="mt-3 shrink-0 text-center text-xs text-muted">
+          {locale === "zh" ? "点击截图查看原图" : "Select a receipt to view its original image"}
+        </p>
       </div>
     </div>
   );
